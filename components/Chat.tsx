@@ -2,6 +2,7 @@
 
 import { useRef, useState } from 'react';
 import type { FeatureCollection } from 'geojson';
+import type { ParcelRef } from '@/types/nsw';
 
 interface Message {
   role: 'user' | 'model';
@@ -9,15 +10,17 @@ interface Message {
 }
 
 const SUGGESTIONS = [
-  'Show me lot 1 in DP270928',
-  'Lots bigger than 1000 m² in plan 270928',
-  'Who owns 10 Smith St?',
+  "What's the zoning at 1 Martin Place Sydney?",
+  'Is this parcel bushfire prone?',
+  'Tell me about this block',
 ];
 
 export default function Chat({
-  onGeojson,
+  selectedParcel,
+  onAgentLayers,
 }: {
-  onGeojson: (g: FeatureCollection | null, count: number) => void;
+  selectedParcel: ParcelRef | null;
+  onAgentLayers: (l: Record<string, FeatureCollection>) => void;
 }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -48,7 +51,7 @@ export default function Chat({
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: trimmed, history }),
+        body: JSON.stringify({ message: trimmed, history, selectedParcel }),
       });
       const data = await res.json();
 
@@ -56,7 +59,7 @@ export default function Chat({
         setError(data.error ?? 'Something went wrong.');
       } else {
         setMessages((m) => [...m, { role: 'model', text: data.reply || '(no reply)' }]);
-        onGeojson(data.geojson ?? null, data.feature_count ?? 0);
+        onAgentLayers(data.layers ?? {});
       }
     } catch {
       setError('Network error — could not reach the agent.');
@@ -69,8 +72,8 @@ export default function Chat({
   return (
     <div className="chat">
       <header className="chat-header">
-        <h1>NSW Property Agent</h1>
-        <p>Ask about NSW land parcels — lots, plans, and parcel sizes.</p>
+        <h1>NSW Place Analyser</h1>
+        <p>Ask about NSW land parcels — zoning, bushfire, flood, and more.</p>
       </header>
 
       <div className="messages" ref={listRef}>
@@ -95,6 +98,12 @@ export default function Chat({
         {error && <div className="error">{error}</div>}
       </div>
 
+      {selectedParcel && (
+        <div className="parcel-chip">
+          Selected: {selectedParcel.lotidstring}
+        </div>
+      )}
+
       <form
         className="composer"
         onSubmit={(e) => {
@@ -105,7 +114,7 @@ export default function Chat({
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="e.g. show me lot 1 in DP270928"
+          placeholder="e.g. What's the zoning here?"
           disabled={loading}
         />
         <button type="submit" disabled={loading || !input.trim()}>
@@ -202,6 +211,18 @@ export default function Chat({
           padding: 9px 12px;
           border-radius: 10px;
           font-size: 13px;
+        }
+        .parcel-chip {
+          margin: 0 14px 2px;
+          padding: 5px 10px;
+          background: var(--accent-soft);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          font-size: 11.5px;
+          color: var(--muted);
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
         .composer {
           display: flex;
