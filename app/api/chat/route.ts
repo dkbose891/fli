@@ -1,36 +1,19 @@
 import { NextResponse } from 'next/server';
-import { runAgent, type ChatHistoryItem } from '@/lib/agent';
+import { runAgent } from '@/lib/agent';
+import type { ParcelRef } from '@/types/nsw';
 
-export const runtime = 'nodejs'; // Vertex SDK needs Node, not edge.
-
-interface ChatRequestBody {
-  message?: string;
-  history?: ChatHistoryItem[];
-}
+export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
-  let body: ChatRequestBody;
-  try {
-    body = (await req.json()) as ChatRequestBody;
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body.' }, { status: 400 });
-  }
-
+  let body: { message?: string; history?: { role:'user'|'model'; text:string }[]; selectedParcel?: ParcelRef | null };
+  try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid JSON.' }, { status: 400 }); }
   const message = body.message?.trim();
-  if (!message) {
-    return NextResponse.json({ error: 'A message is required.' }, { status: 400 });
-  }
-
+  if (!message) return NextResponse.json({ error: 'A message is required.' }, { status: 400 });
   try {
-    const result = await runAgent(message, body.history ?? []);
+    const result = await runAgent(message, body.history ?? [], body.selectedParcel ?? null);
     return NextResponse.json(result);
   } catch (err) {
-    console.error('[chat] agent error:', err);
-    const detail =
-      err instanceof Error ? err.message : 'Unexpected error running the agent.';
-    return NextResponse.json(
-      { error: `Sorry — something went wrong: ${detail}` },
-      { status: 500 },
-    );
+    console.error('[chat]', err);
+    return NextResponse.json({ error: `Sorry — ${err instanceof Error ? err.message : 'agent error'}` }, { status: 500 });
   }
 }
