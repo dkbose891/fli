@@ -26,3 +26,4 @@ next-env.d.ts
 # local tooling + internal build spec (not for the public repo)
 .claude/
 instructions/
+docs/superpowers/

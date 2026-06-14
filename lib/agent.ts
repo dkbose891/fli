@@ -42,6 +42,8 @@ const HANDLERS: Record<string, (args: any) => Promise<unknown>> = {
   wikipedia_lookup: (a) => wikipediaLookup(a.query),
 };
 
+// Only tools with a corresponding map LayerName are drawn. fsr/height/lotsize/heritage
+// return geometry too but are reported in text only (no toggle layer in v1, by design).
 export const TOOL_TO_LAYER: Record<string, string> = {
   query_parcel: 'parcels', query_zoning: 'zoning', query_bushfire: 'bushfire', query_flood: 'flood', query_suburb: 'suburbs',
 };
