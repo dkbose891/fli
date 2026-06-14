@@ -12,7 +12,7 @@ const PT = { type: Type.OBJECT, properties: { lng: { type: Type.NUMBER }, lat: {
 export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   { name: 'geocode_address', description: 'Resolve a NSW street address to matching properties (point/parcel).',
     parameters: { type: Type.OBJECT, properties: { address: { type: Type.STRING } }, required: ['address'] } },
-  { name: 'query_parcel', description: 'Cadastral lots by ArcGIS where clause (lotidstring, plannumber, planlotarea).',
+  { name: 'query_parcel', description: "Cadastral lots by ArcGIS SQL where clause. Fields: lotidstring (string, format 'LOT//PLAN' e.g. '1//DP270928', or 'LOT/SECTION/PLAN'), plannumber (integer e.g. 270928), planlotarea (number, square metres). Examples: \"lotidstring = '1//DP270928'\"; \"plannumber = 270928\"; \"planlotarea > 600\".",
     parameters: { type: Type.OBJECT, properties: { where: { type: Type.STRING }, max_features: { type: Type.INTEGER } }, required: ['where'] } },
   { name: 'query_zoning',   description: 'Land-use zoning at a point.', parameters: PT },
   { name: 'query_fsr',      description: 'Floor space ratio at a point.', parameters: PT },
