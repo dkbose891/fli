@@ -8,6 +8,7 @@ import { parcelByWhere, parcelAtPoint } from '../lib/sources/cadastre';
 import { zoningAtPoint } from '../lib/sources/planning';
 import { bushfireAtPoint } from '../lib/sources/hazard';
 import { suburbAtPoint } from '../lib/sources/admin';
+import { wikipediaLookup } from '../lib/sources/wikipedia';
 
 const fake = { geojson: { type: 'FeatureCollection', features: [] }, feature_count: 0, summary: [] };
 beforeEach(() => { vi.clearAllMocks(); vi.mocked(arcgisQuery).mockResolvedValue(fake as any); });
@@ -27,6 +28,13 @@ it('zoningAtPoint hits Land Zoning layer 2 with point geometry', async () => {
   expect(base).toContain('EPI_Primary_Planning_Layers/MapServer/2/query');
   expect(params.geometry).toBe('151.2,-33.8');
   expect(String(params.outFields)).toContain('LAY_CLASS');
+});
+
+it('returns the summary extract and flags it as general knowledge', async () => {
+  global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ extract: 'Brisbane is...', title: 'Brisbane' }) }) as any;
+  const r = await wikipediaLookup('Brisbane');
+  expect(r.extract).toContain('Brisbane is');
+  expect(r.source).toBe('wikipedia');
 });
 
 describe('cadastre', () => {
