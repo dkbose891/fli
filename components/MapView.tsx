@@ -16,6 +16,21 @@ export default function MapView({ layers, activeLayers, selectedGeo, onSelectPar
   onSelectParcel: (p: ParcelRef, g: FeatureCollection) => void;
 }) {
   const mapRef = useRef<MapRef | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
+
+  // MapLibre can initialise before the flex layout gives its container full
+  // height, freezing the canvas small. Observe the wrapper and resize the map
+  // whenever its box changes (the observer also fires once on attach).
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => mapRef.current?.resize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const onLoad = useCallback(() => {
+    requestAnimationFrame(() => mapRef.current?.resize());
+  }, []);
 
   // Fly to a newly selected parcel.
   useEffect(() => {
@@ -43,19 +58,21 @@ export default function MapView({ layers, activeLayers, selectedGeo, onSelectPar
   }, [onSelectParcel]);
 
   return (
-    <Map ref={mapRef} initialViewState={{ longitude:151.2093, latitude:-33.8688, zoom:11 }}
-         style={{ width:'100%', height:'100%' }} mapStyle={BASEMAP} cursor="pointer" onClick={onClick}>
-      {[...activeLayers].map((name) => layers[name] && (
-        <Source key={name} id={name} type="geojson" data={layers[name]}>
-          <Layer id={`${name}-fill`} type="fill" paint={{ 'fill-color': COLOURS[name], 'fill-opacity': 0.28 }} />
-          <Layer id={`${name}-line`} type="line" paint={{ 'line-color': COLOURS[name], 'line-width': 1.4 }} />
-        </Source>
-      ))}
-      {selectedGeo && (
-        <Source id="selected" type="geojson" data={selectedGeo}>
-          <Layer id="selected-line" type="line" paint={{ 'line-color':'#ffd166', 'line-width':3 }} />
-        </Source>
-      )}
-    </Map>
+    <div ref={wrapRef} style={{ position:'absolute', inset:0 }}>
+      <Map ref={mapRef} initialViewState={{ longitude:151.2093, latitude:-33.8688, zoom:11 }}
+           style={{ position:'absolute', inset:0 }} mapStyle={BASEMAP} cursor="pointer" onClick={onClick} onLoad={onLoad}>
+        {[...activeLayers].map((name) => layers[name] && (
+          <Source key={name} id={name} type="geojson" data={layers[name]}>
+            <Layer id={`${name}-fill`} type="fill" paint={{ 'fill-color': COLOURS[name], 'fill-opacity': 0.28 }} />
+            <Layer id={`${name}-line`} type="line" paint={{ 'line-color': COLOURS[name], 'line-width': 1.4 }} />
+          </Source>
+        ))}
+        {selectedGeo && (
+          <Source id="selected" type="geojson" data={selectedGeo}>
+            <Layer id="selected-line" type="line" paint={{ 'line-color':'#ffd166', 'line-width':3 }} />
+          </Source>
+        )}
+      </Map>
+    </div>
   );
 }
