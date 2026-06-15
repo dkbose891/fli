@@ -7,8 +7,8 @@ export const runtime = 'nodejs';
 
 export async function GET(req: Request, { params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
-  const def = LAYER_REGISTRY[name as LayerName];
-  if (!def) return NextResponse.json({ error: `Unknown layer '${name}'.` }, { status: 404 });
+  const query = LAYER_REGISTRY[name as LayerName];
+  if (!query) return NextResponse.json({ error: `Unknown layer '${name}'.` }, { status: 404 });
 
   const sp = new URL(req.url).searchParams;
   const point = sp.get('point');
@@ -18,7 +18,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ name: st
   if (!isInNSW(lng, lat)) return NextResponse.json({ error: 'That location is outside NSW — this tool only covers New South Wales.' }, { status: 422 });
 
   try {
-    const { geojson, feature_count } = await def.atPoint(lng, lat);
+    const { geojson, feature_count } = await query(lng, lat);
     return NextResponse.json({ geojson, feature_count });
   } catch (err) {
     return NextResponse.json({ error: err instanceof Error ? err.message : 'layer query failed' }, { status: 502 });
