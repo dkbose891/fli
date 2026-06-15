@@ -1,5 +1,5 @@
 'use client';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
@@ -24,6 +24,31 @@ export default function Page() {
     setLayers((prev) => ({ ...prev, parcels: g }));
     setActive((s) => new Set([...s, 'parcels']));
   }, []);
+
+  // Fetch a single layer's data at a point via the deterministic proxy (0 tokens).
+  const fetchLayerAt = useCallback(async (name: LayerName, lng: number, lat: number) => {
+    try {
+      const r = await fetch(`/api/layer/${name}?point=${lng},${lat}`);
+      if (!r.ok) return;
+      const d = await r.json();
+      if (d.geojson) setLayers((p) => ({ ...p, [name]: d.geojson }));
+    } catch { /* ignore layer fetch misses */ }
+  }, []);
+
+  // When a parcel is selected (or a layer is toggled on), load each active
+  // overlay layer at the selected point. Cached per layer+point to avoid refetch.
+  const fetchedRef = useRef<Record<string, string>>({});
+  useEffect(() => {
+    const pt = selected?.point;
+    if (!pt) return;
+    const key = `${pt.lng},${pt.lat}`;
+    active.forEach((name) => {
+      if (name === 'parcels') return; // the selection itself is the parcel layer
+      if (fetchedRef.current[name] === key) return;
+      fetchedRef.current[name] = key;
+      fetchLayerAt(name, pt.lng, pt.lat);
+    });
+  }, [selected, active, fetchLayerAt]);
 
   return (
     <main style={{ display:'flex', height:'100vh' }}>
