@@ -1,11 +1,14 @@
 'use client';
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
 import Chat from '@/components/Chat';
 import LayerPanel from '@/components/LayerPanel';
 const MapView = dynamic(() => import('@/components/MapView'), { ssr:false });
+
+// Overlay layers fetched in parallel on parcel select (parcels = the selection itself).
+const OVERLAY_LAYERS: LayerName[] = ['zoning', 'bushfire', 'flood', 'suburbs'];
 
 export default function Page() {
   const [layers, setLayers] = useState<Record<string, FeatureCollection>>({});
@@ -19,36 +22,33 @@ export default function Page() {
     setLayers((p) => ({ ...p, ...l }));
     setActive((s) => new Set([...s, ...(Object.keys(l) as LayerName[])]));
   }, []);
-  const onSelectParcel = useCallback((p: ParcelRef, g: FeatureCollection) => {
+  // On selecting a parcel, eagerly fetch ALL overlay layers at that point in
+  // parallel (0 tokens, via the deterministic proxy). Display stays gated by the
+  // toggle panel, so flipping a checkbox is instant — the data is already loaded.
+  const onSelectParcel = useCallback(async (p: ParcelRef, g: FeatureCollection) => {
     setSelected(p); setSelectedGeo(g);
     setLayers((prev) => ({ ...prev, parcels: g }));
     setActive((s) => new Set([...s, 'parcels']));
-  }, []);
-
-  // Fetch a single layer's data at a point via the deterministic proxy (0 tokens).
-  const fetchLayerAt = useCallback(async (name: LayerName, lng: number, lat: number) => {
-    try {
-      const r = await fetch(`/api/layer/${name}?point=${lng},${lat}`);
-      if (!r.ok) return;
-      const d = await r.json();
-      if (d.geojson) setLayers((p) => ({ ...p, [name]: d.geojson }));
-    } catch { /* ignore layer fetch misses */ }
-  }, []);
-
-  // When a parcel is selected (or a layer is toggled on), load each active
-  // overlay layer at the selected point. Cached per layer+point to avoid refetch.
-  const fetchedRef = useRef<Record<string, string>>({});
-  useEffect(() => {
-    const pt = selected?.point;
-    if (!pt) return;
-    const key = `${pt.lng},${pt.lat}`;
-    active.forEach((name) => {
-      if (name === 'parcels') return; // the selection itself is the parcel layer
-      if (fetchedRef.current[name] === key) return;
-      fetchedRef.current[name] = key;
-      fetchLayerAt(name, pt.lng, pt.lat);
+    if (!p.point) return;
+    const { lng, lat } = p.point;
+    const results = await Promise.all(
+      OVERLAY_LAYERS.map(async (name) => {
+        try {
+          const r = await fetch(`/api/layer/${name}?point=${lng},${lat}`);
+          if (!r.ok) return [name, null] as const;
+          const d = await r.json();
+          return [name, (d.geojson ?? null) as FeatureCollection | null] as const;
+        } catch {
+          return [name, null] as const;
+        }
+      }),
+    );
+    setLayers((prev) => {
+      const next = { ...prev };
+      for (const [name, gj] of results) if (gj) next[name] = gj;
+      return next;
     });
-  }, [selected, active, fetchLayerAt]);
+  }, []);
 
   return (
     <main style={{ display:'flex', height:'100vh' }}>

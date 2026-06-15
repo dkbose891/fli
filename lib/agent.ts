@@ -2,10 +2,10 @@ import { GoogleGenAI, Type, type Content, type FunctionDeclaration } from '@goog
 import type { FeatureCollection } from 'geojson';
 import type { SourceResult, ParcelRef } from '@/types/nsw';
 import { parcelByWhere, geocodeAddress } from './sources/cadastre';
-import { zoningAtPoint, fsrAtPoint, heightAtPoint, lotSizeAtPoint, heritageAtPoint } from './sources/planning';
-import { bushfireAtPoint, floodAtPoint } from './sources/hazard';
-import { suburbAtPoint } from './sources/admin';
+import { fsrAtPoint, heightAtPoint, lotSizeAtPoint, heritageAtPoint } from './sources/planning';
 import { wikipediaLookup } from './sources/wikipedia';
+import { LAYER_REGISTRY } from './layers';
+import type { LayerName } from '@/types/nsw';
 
 const PT = { type: Type.OBJECT, properties: { lng: { type: Type.NUMBER }, lat: { type: Type.NUMBER } }, required: ['lng','lat'] };
 
@@ -27,18 +27,21 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
 ];
 
 const pt = (f: (lng: number, lat: number) => Promise<SourceResult>) => (a: any) => f(a.lng, a.lat);
+// The five map-layer tools call the SAME per-layer function the /api/layer proxy
+// (and the click-to-load path) use — one source of truth via LAYER_REGISTRY.
+const layer = (name: LayerName) => (a: any) => LAYER_REGISTRY[name].atPoint(a.lng, a.lat);
 
 const HANDLERS: Record<string, (args: any) => Promise<unknown>> = {
   geocode_address: (a) => geocodeAddress(a.address),
   query_parcel: (a) => parcelByWhere(a.where, a.max_features ?? 200),
-  query_zoning: pt(zoningAtPoint),
+  query_zoning: layer('zoning'),
   query_fsr: pt(fsrAtPoint),
   query_height: pt(heightAtPoint),
   query_lotsize: pt(lotSizeAtPoint),
   query_heritage: pt(heritageAtPoint),
-  query_bushfire: pt(bushfireAtPoint),
-  query_flood: pt(floodAtPoint),
-  query_suburb: pt(suburbAtPoint),
+  query_bushfire: layer('bushfire'),
+  query_flood: layer('flood'),
+  query_suburb: layer('suburbs'),
   wikipedia_lookup: (a) => wikipediaLookup(a.query),
 };
 
