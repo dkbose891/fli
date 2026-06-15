@@ -13,9 +13,9 @@ import { wikipediaLookup } from '../lib/sources/wikipedia';
 const fake = { geojson: { type: 'FeatureCollection', features: [] }, feature_count: 0, summary: [] };
 beforeEach(() => { vi.clearAllMocks(); vi.mocked(arcgisQuery).mockResolvedValue(fake as any); });
 
-it('bushfireAtPoint hits Fire/BFPL layer 0', async () => {
+it('bushfireAtPoint hits Planning_Portal_Hazard layer 229', async () => {
   await bushfireAtPoint(151.2, -33.8);
-  expect(vi.mocked(arcgisQuery).mock.calls.at(-1)![0]).toContain('Fire/BFPL/MapServer/0/query');
+  expect(vi.mocked(arcgisQuery).mock.calls.at(-1)![0]).toContain('Planning_Portal_Hazard/MapServer/229/query');
 });
 it('suburbAtPoint queries admin boundaries by point', async () => {
   await suburbAtPoint(151.2, -33.8);

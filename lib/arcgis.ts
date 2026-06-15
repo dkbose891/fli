@@ -51,5 +51,12 @@ export async function arcgisQuery(base: string, params: Record<string, string | 
 }
 
 export function pointParams(lng: number, lat: number, outFields: string): Record<string, string | number> {
-  return { geometry: `${lng},${lat}`, geometryType: 'esriGeometryPoint', inSR: '4326', spatialRel: 'esriSpatialRelIntersects', outFields };
+  // JSON geometry (not the "lng,lat" shorthand): the ArcGIS MapServer endpoints
+  // (ePlanning zoning, etc.) reject the shorthand for point intersects but accept this.
+  return {
+    geometry: JSON.stringify({ x: lng, y: lat, spatialReference: { wkid: 4326 } }),
+    geometryType: 'esriGeometryPoint',
+    spatialRel: 'esriSpatialRelIntersects',
+    outFields,
+  };
 }

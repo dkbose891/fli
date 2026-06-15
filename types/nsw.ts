@@ -6,6 +6,7 @@ export interface ParcelRef {
   lotidstring: string;
   planlabel?: string;
   planlotarea?: number | null;
+  point?: { lng: number; lat: number };
 }
 
 export interface LocationInput {

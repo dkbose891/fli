@@ -62,7 +62,13 @@ const SYSTEM = `You are a NSW place analyser. Use the tools to answer with offic
 export interface AgentResult { reply: string; layers: Record<string, FeatureCollection>; feature_count: number }
 
 export async function runAgentWithClient(ai: GoogleGenAI, message: string, history: { role: 'user'|'model'; text: string }[], selectedParcel: ParcelRef | null): Promise<AgentResult> {
-  const ctx = selectedParcel ? `\n\n[Selected parcel: ${selectedParcel.lotidstring}]` : '';
+  const ctx = selectedParcel
+    ? `\n\n[Selected parcel: ${selectedParcel.lotidstring}${
+        selectedParcel.point
+          ? ` at lng=${selectedParcel.point.lng}, lat=${selectedParcel.point.lat} — use these coordinates for point-based tools (zoning, bushfire, flood, suburb)`
+          : ''
+      }]`
+    : '';
   const contents: Content[] = [
     ...history.map((h) => ({ role: h.role, parts: [{ text: h.text }] })),
     { role: 'user', parts: [{ text: message + ctx }] },

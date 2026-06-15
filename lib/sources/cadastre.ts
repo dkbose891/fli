@@ -1,4 +1,5 @@
 import { arcgisQuery, pointParams } from '@/lib/arcgis';
+import { representativePoint } from '@/lib/geo';
 import type { SourceResult } from '@/types/nsw';
 
 const SERVER = 'https://portal.spatial.nsw.gov.au/server/rest/services/NSW_Land_Parcel_Property_Theme/FeatureServer';
@@ -16,11 +17,18 @@ export function parcelAtPoint(lng: number, lat: number): Promise<SourceResult> {
   return arcgisQuery(LOT, pointParams(lng, lat, LOT_FIELDS));
 }
 
-export function geocodeAddress(address: string, maxFeatures = 5): Promise<SourceResult> {
+export async function geocodeAddress(address: string, maxFeatures = 5): Promise<SourceResult> {
   const safe = address.toUpperCase().replace(/'/g, "''");
-  return arcgisQuery(PROPERTY, {
+  const res = await arcgisQuery(PROPERTY, {
     where: `address LIKE '%${safe}%'`,
     outFields: 'address,housenumber,propid,principaladdresstype',
     resultRecordCount: cap(maxFeatures),
   });
+  // Enrich each summary row with a representative lng/lat so the agent can chain
+  // address -> point-based tools (zoning, bushfire, ...) without extra calls.
+  const summary = res.geojson.features.map((f) => {
+    const p = representativePoint(f.geometry);
+    return { ...(f.properties ?? {}), ...(p ? { lng: p.lng, lat: p.lat } : {}) };
+  });
+  return { ...res, summary };
 }

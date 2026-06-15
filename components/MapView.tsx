@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import Map, { Layer, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre';
 import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
+import { isInNSW } from '@/lib/geo';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const BASEMAP = 'https://tiles.openfreemap.org/styles/liberty';
@@ -27,13 +28,17 @@ export default function MapView({ layers, activeLayers, selectedGeo, onSelectPar
 
   const onClick = useCallback(async (e: MapLayerMouseEvent) => {
     const { lng, lat } = e.lngLat;
+    if (!isInNSW(lng, lat)) return; // only NSW is covered by these datasets
     try {
       const r = await fetch(`/api/layer/parcels?point=${lng},${lat}`);
       const d = await r.json();
       const f = d.geojson?.features?.[0];
       if (!f) return;
       const p = f.properties ?? {};
-      onSelectParcel({ lotidstring: p.lotidstring, planlabel: p.planlabel, planlotarea: p.planlotarea }, d.geojson);
+      onSelectParcel(
+        { lotidstring: p.lotidstring, planlabel: p.planlabel, planlotarea: p.planlotarea, point: { lng, lat } },
+        d.geojson,
+      );
     } catch { /* ignore click misses */ }
   }, [onSelectParcel]);
 
