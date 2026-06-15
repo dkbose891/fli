@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import Map, { Layer, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre';
 import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
-import { isInNSW } from '@/lib/geo';
+import { isInNSW, representativePoint } from '@/lib/geo';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const BASEMAP = 'https://tiles.openfreemap.org/styles/liberty';
@@ -36,9 +36,8 @@ export default function MapView({ layers, activeLayers, selectedGeo, onSelectPar
   useEffect(() => {
     const f = selectedGeo?.features?.[0];
     if (!f || !mapRef.current) return;
-    const g: any = f.geometry;
-    const coords: number[] | undefined = g?.type === 'Polygon' ? g.coordinates?.[0]?.[0] : g?.type === 'MultiPolygon' ? g.coordinates?.[0]?.[0]?.[0] : g?.coordinates;
-    if (coords) mapRef.current.flyTo({ center: [coords[0], coords[1]], zoom: Math.max(16, mapRef.current.getZoom() ?? 11), duration: 800 });
+    const c = representativePoint(f.geometry);
+    if (c) mapRef.current.flyTo({ center: [c.lng, c.lat], zoom: Math.max(16, mapRef.current.getZoom() ?? 11), duration: 800 });
   }, [selectedGeo]);
 
   const onClick = useCallback(async (e: MapLayerMouseEvent) => {

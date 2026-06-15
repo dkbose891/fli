@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
@@ -13,17 +13,17 @@ export default function Page() {
   const [selected, setSelected] = useState<ParcelRef | null>(null);
   const [selectedGeo, setSelectedGeo] = useState<FeatureCollection | null>(null);
 
-  const toggle = (l: LayerName) => setActive((s) => { const n = new Set(s); n.has(l) ? n.delete(l) : n.add(l); return n; });
-  const onAgentLayers = (l: Record<string, FeatureCollection>) => {
+  const toggle = useCallback((l: LayerName) => setActive((s) => { const n = new Set(s); n.has(l) ? n.delete(l) : n.add(l); return n; }), []);
+  const onAgentLayers = useCallback((l: Record<string, FeatureCollection>) => {
     if (!l || Object.keys(l).length === 0) return;
     setLayers((p) => ({ ...p, ...l }));
     setActive((s) => new Set([...s, ...(Object.keys(l) as LayerName[])]));
-  };
-  const onSelectParcel = (p: ParcelRef, g: FeatureCollection) => {
+  }, []);
+  const onSelectParcel = useCallback((p: ParcelRef, g: FeatureCollection) => {
     setSelected(p); setSelectedGeo(g);
     setLayers((prev) => ({ ...prev, parcels: g }));
     setActive((s) => new Set([...s, 'parcels']));
-  };
+  }, []);
 
   return (
     <main style={{ display:'flex', height:'100vh' }}>

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { it, expect, vi } from 'vitest';
 
 vi.mock('../lib/sources/cadastre', () => ({
   parcelByWhere: vi.fn().mockResolvedValue({ geojson:{type:'FeatureCollection',features:[]}, feature_count:0, summary:[] }),

@@ -14,6 +14,8 @@ export async function POST(req: Request) {
     return NextResponse.json(result);
   } catch (err) {
     console.error('[chat]', err);
-    return NextResponse.json({ error: `Sorry — ${err instanceof Error ? err.message : 'agent error'}` }, { status: 500 });
+    // Don't leak SDK/project internals to the browser in production.
+    const detail = process.env.NODE_ENV !== 'production' && err instanceof Error ? err.message : 'something went wrong';
+    return NextResponse.json({ error: `Sorry — ${detail}` }, { status: 500 });
   }
 }

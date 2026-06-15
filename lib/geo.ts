@@ -1,7 +1,7 @@
 import type { Geometry } from 'geojson';
 
 // Approximate bounding box of NSW (incl. a small margin), lng/lat in WGS84.
-export const NSW_BBOX = { minLng: 140.9, minLat: -37.6, maxLng: 153.7, maxLat: -28.1 };
+export const NSW_BBOX = { minLng: 140.9, minLat: -37.6, maxLng: 153.7, maxLat: -27.9 };
 
 export function isInNSW(lng: number, lat: number): boolean {
   return (
