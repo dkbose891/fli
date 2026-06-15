@@ -1,110 +1,77 @@
 'use client';
-
 import { useCallback, useEffect, useRef } from 'react';
-import Map, {
-  Layer,
-  Source,
-  type MapLayerMouseEvent,
-  type MapRef,
-} from 'react-map-gl/maplibre';
-import maplibregl from 'maplibre-gl';
+import Map, { Layer, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre';
 import type { FeatureCollection } from 'geojson';
+import type { LayerName, ParcelRef } from '@/types/nsw';
+import { isInNSW, representativePoint } from '@/lib/geo';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const BASEMAP = 'https://tiles.openfreemap.org/styles/liberty';
+const COLOURS: Record<string, string> = { parcels:'#4f9cff', zoning:'#7f77dd', bushfire:'#d85a30', flood:'#1d9e75', suburbs:'#888780' };
 
-const fillLayer = {
-  id: 'parcels-fill',
-  type: 'fill' as const,
-  paint: {
-    'fill-color': '#4f9cff',
-    'fill-opacity': 0.28,
-  },
-};
-
-const lineLayer = {
-  id: 'parcels-line',
-  type: 'line' as const,
-  paint: {
-    'line-color': '#7cb6ff',
-    'line-width': 1.6,
-  },
-};
-
-function bboxOf(geojson: FeatureCollection): [number, number, number, number] | null {
-  let minX = Infinity,
-    minY = Infinity,
-    maxX = -Infinity,
-    maxY = -Infinity;
-
-  const visit = (coords: any): void => {
-    if (typeof coords?.[0] === 'number' && typeof coords?.[1] === 'number') {
-      const [x, y] = coords as [number, number];
-      if (x < minX) minX = x;
-      if (y < minY) minY = y;
-      if (x > maxX) maxX = x;
-      if (y > maxY) maxY = y;
-      return;
-    }
-    if (Array.isArray(coords)) coords.forEach(visit);
-  };
-
-  for (const f of geojson.features) {
-    if (f.geometry && 'coordinates' in f.geometry) visit(f.geometry.coordinates);
-  }
-
-  if (!Number.isFinite(minX)) return null;
-  return [minX, minY, maxX, maxY];
-}
-
-export default function MapView({ geojson }: { geojson: FeatureCollection | null }) {
+export default function MapView({ layers, activeLayers, selectedGeo, onSelectParcel }:{
+  layers: Record<string, FeatureCollection>;
+  activeLayers: Set<LayerName>;
+  selectedGeo: FeatureCollection | null;
+  onSelectParcel: (p: ParcelRef, g: FeatureCollection) => void;
+}) {
   const mapRef = useRef<MapRef | null>(null);
+  const wrapRef = useRef<HTMLDivElement | null>(null);
 
-  // Fit the map to new parcels whenever they arrive.
+  // MapLibre can initialise before the flex layout gives its container full
+  // height, freezing the canvas small. Observe the wrapper and resize the map
+  // whenever its box changes (the observer also fires once on attach).
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !geojson || geojson.features.length === 0) return;
-    const bbox = bboxOf(geojson);
-    if (!bbox) return;
-    map.fitBounds([bbox[0], bbox[1], bbox[2], bbox[3]], {
-      padding: 80,
-      maxZoom: 17,
-      duration: 800,
-    });
-  }, [geojson]);
-
-  const onClick = useCallback((e: MapLayerMouseEvent) => {
-    const feature = e.features?.[0];
-    if (!feature) return;
-    const p = feature.properties ?? {};
-    const map = e.target;
-    new maplibregl.Popup({ closeButton: true, offset: 8 })
-      .setLngLat(e.lngLat)
-      .setHTML(
-        `<div style="font-family:sans-serif;font-size:12px;line-height:1.5;color:#0b0f17">
-           <strong>${p.lotidstring ?? 'Parcel'}</strong><br/>
-           Plan: ${p.planlabel ?? '—'}<br/>
-           Area: ${p.planlotarea ?? '—'} ${p.planlotareaunits ?? 'm²'}
-         </div>`,
-      )
-      .addTo(map);
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => mapRef.current?.resize());
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const onLoad = useCallback(() => {
+    requestAnimationFrame(() => mapRef.current?.resize());
   }, []);
 
+  // Fly to a newly selected parcel.
+  useEffect(() => {
+    const f = selectedGeo?.features?.[0];
+    if (!f || !mapRef.current) return;
+    const c = representativePoint(f.geometry);
+    if (c) mapRef.current.flyTo({ center: [c.lng, c.lat], zoom: Math.max(16, mapRef.current.getZoom() ?? 11), duration: 800 });
+  }, [selectedGeo]);
+
+  const onClick = useCallback(async (e: MapLayerMouseEvent) => {
+    const { lng, lat } = e.lngLat;
+    if (!isInNSW(lng, lat)) return; // only NSW is covered by these datasets
+    try {
+      const r = await fetch(`/api/layer/parcels?point=${lng},${lat}`);
+      const d = await r.json();
+      const f = d.geojson?.features?.[0];
+      if (!f) return;
+      const p = f.properties ?? {};
+      onSelectParcel(
+        { lotidstring: p.lotidstring, planlabel: p.planlabel, planlotarea: p.planlotarea, point: { lng, lat } },
+        d.geojson,
+      );
+    } catch { /* ignore click misses */ }
+  }, [onSelectParcel]);
+
   return (
-    <Map
-      ref={mapRef}
-      initialViewState={{ longitude: 147.0, latitude: -33.0, zoom: 5.5 }}
-      style={{ width: '100%', height: '100%' }}
-      mapStyle={BASEMAP}
-      interactiveLayerIds={['parcels-fill']}
-      onClick={onClick}
-    >
-      {geojson && geojson.features.length > 0 && (
-        <Source id="parcels" type="geojson" data={geojson}>
-          <Layer {...fillLayer} />
-          <Layer {...lineLayer} />
-        </Source>
-      )}
-    </Map>
+    <div ref={wrapRef} style={{ position:'absolute', inset:0 }}>
+      <Map ref={mapRef} initialViewState={{ longitude:151.2093, latitude:-33.8688, zoom:11 }}
+           style={{ position:'absolute', inset:0 }} mapStyle={BASEMAP} cursor="pointer" onClick={onClick} onLoad={onLoad}>
+        {[...activeLayers].map((name) => layers[name] && (
+          <Source key={name} id={name} type="geojson" data={layers[name]}>
+            <Layer id={`${name}-fill`} type="fill" paint={{ 'fill-color': COLOURS[name], 'fill-opacity': 0.28 }} />
+            <Layer id={`${name}-line`} type="line" paint={{ 'line-color': COLOURS[name], 'line-width': 1.4 }} />
+          </Source>
+        ))}
+        {selectedGeo && (
+          <Source id="selected" type="geojson" data={selectedGeo}>
+            <Layer id="selected-line" type="line" paint={{ 'line-color':'#ffd166', 'line-width':3 }} />
+          </Source>
+        )}
+      </Map>
+    </div>
   );
 }
