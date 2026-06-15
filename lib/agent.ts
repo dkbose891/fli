@@ -29,7 +29,7 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
 const pt = (f: (lng: number, lat: number) => Promise<SourceResult>) => (a: any) => f(a.lng, a.lat);
 // The five map-layer tools call the SAME per-layer function the /api/layer proxy
 // (and the click-to-load path) use — one source of truth via LAYER_REGISTRY.
-const layer = (name: LayerName) => (a: any) => LAYER_REGISTRY[name].atPoint(a.lng, a.lat);
+const layer = (name: LayerName) => (a: any) => LAYER_REGISTRY[name](a.lng, a.lat);
 
 const HANDLERS: Record<string, (args: any) => Promise<unknown>> = {
   geocode_address: (a) => geocodeAddress(a.address),
