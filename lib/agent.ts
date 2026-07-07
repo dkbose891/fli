@@ -67,6 +67,8 @@ export interface AgentResult { reply: string; layers: Record<string, FeatureColl
 export async function runAgentWithClient(ai: GoogleGenAI, message: string, history: { role: 'user'|'model'; text: string }[], selectedParcel: ParcelRef | null): Promise<AgentResult> {
   const ctx = selectedParcel
     ? `\n\n[Selected parcel: ${selectedParcel.lotidstring}${
+        selectedParcel.address ? ` — ${selectedParcel.address}` : ''
+      }${
         selectedParcel.point
           ? ` at lng=${selectedParcel.point.lng}, lat=${selectedParcel.point.lat} — use these coordinates for point-based tools (zoning, bushfire, flood, suburb)`
           : ''

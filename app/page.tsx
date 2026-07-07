@@ -5,6 +5,7 @@ import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
 import Chat from '@/components/Chat';
 import LayerPanel from '@/components/LayerPanel';
+import SearchBar from '@/components/SearchBar';
 const MapView = dynamic(() => import('@/components/MapView'), { ssr:false });
 
 // Overlay layers fetched in parallel on parcel select (parcels = the selection itself).
@@ -52,12 +53,13 @@ export default function Page() {
 
   return (
     <main style={{ display:'flex', height:'100vh' }}>
-      <section style={{ width:'40%', maxWidth:460, minWidth:320, height:'100%' }}>
-        <Chat selectedParcel={selected} onAgentLayers={onAgentLayers} />
-      </section>
       <section style={{ flex:1, position:'relative', height:'100%' }}>
+        <SearchBar onSelectParcel={onSelectParcel} />
         <LayerPanel active={active} onToggle={toggle} />
         <MapView layers={layers} activeLayers={active} selectedGeo={selectedGeo} onSelectParcel={onSelectParcel} />
+      </section>
+      <section style={{ width:'40%', maxWidth:460, minWidth:320, height:'100%' }}>
+        <Chat selectedParcel={selected} onAgentLayers={onAgentLayers} />
       </section>
     </main>
   );

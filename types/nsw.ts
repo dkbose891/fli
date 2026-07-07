@@ -7,6 +7,8 @@ export interface ParcelRef {
   planlabel?: string;
   planlotarea?: number | null;
   point?: { lng: number; lat: number };
+  /** Street address (Addressr sla) when the parcel was selected via search. */
+  address?: string;
 }
 
 export interface SourceResult {

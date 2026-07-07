@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { FeatureCollection } from 'geojson';
 import type { ParcelRef } from '@/types/nsw';
 
@@ -26,7 +26,20 @@ export default function Chat({
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [offerAnalysis, setOfferAnalysis] = useState(false);
+  const lastOffered = useRef<string | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
+
+  // Pop the analyse offer whenever a *new* parcel is selected (search or map click).
+  useEffect(() => {
+    const id = selectedParcel?.lotidstring ?? null;
+    if (id && id !== lastOffered.current) {
+      lastOffered.current = id;
+      setOfferAnalysis(true);
+    } else if (!id) {
+      setOfferAnalysis(false);
+    }
+  }, [selectedParcel]);
 
   const scrollToBottom = () => {
     requestAnimationFrame(() => {
@@ -100,7 +113,20 @@ export default function Chat({
 
       {selectedParcel && (
         <div className="parcel-chip">
-          Selected: {selectedParcel.lotidstring}
+          Selected: {selectedParcel.address ?? selectedParcel.lotidstring}
+        </div>
+      )}
+
+      {offerAnalysis && selectedParcel && (
+        <div className="analyse-offer">
+          <button
+            className="analyse-btn"
+            onClick={() => { setOfferAnalysis(false); send('Tell me everything about this parcel — zoning, hazards, size, anything notable.'); }}
+            disabled={loading}
+          >
+            Analyse this parcel
+          </button>
+          <button className="analyse-dismiss" onClick={() => setOfferAnalysis(false)} aria-label="Dismiss">✕</button>
         </div>
       )}
 
@@ -132,7 +158,7 @@ export default function Chat({
           flex-direction: column;
           height: 100%;
           background: var(--panel);
-          border-right: 1px solid var(--border);
+          border-left: 1px solid var(--border);
         }
         .chat-header {
           padding: 18px 20px 14px;
@@ -223,6 +249,35 @@ export default function Chat({
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+        }
+        .analyse-offer {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin: 6px 14px 2px;
+        }
+        .analyse-btn {
+          flex: 1;
+          background: var(--accent-soft);
+          color: var(--text);
+          border: 1px solid var(--accent);
+          border-radius: 10px;
+          padding: 9px 12px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          transition: background 0.15s;
+        }
+        .analyse-btn:hover { background: rgba(79, 156, 255, 0.24); }
+        .analyse-btn:disabled { opacity: 0.45; cursor: default; }
+        .analyse-dismiss {
+          background: none;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          color: var(--muted);
+          padding: 8px 10px;
+          font-size: 12px;
+          cursor: pointer;
         }
         .composer {
           display: flex;

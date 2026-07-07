@@ -1,0 +1,181 @@
+{
+  "/addresses?q=26%20calvert%20avenue%20killara%20nsw": [
+    {
+      "sla": "26 CALVERT AV, KILLARA NSW 2071",
+      "ssla": "26 CALVERT AV, KILLARA NSW 2071",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, <em>KILLARA</em> <em>NSW</em> 2071",
+        "ssla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, <em>KILLARA</em> <em>NSW</em> 2071"
+      },
+      "score": 79.311485,
+      "pid": "GANSW705091266"
+    }
+  ],
+  "/addresses/GANSW705091266": {
+    "geocoding": {
+      "level": {
+        "code": "7",
+        "name": "LOCALITY,STREET, ADDRESS"
+      },
+      "geocodes": [
+        {
+          "default": true,
+          "type": {
+            "code": "PC",
+            "name": "PROPERTY CENTROID"
+          },
+          "reliability": {
+            "code": "2",
+            "name": "WITHIN ADDRESS SITE BOUNDARY OR ACCESS POINT"
+          },
+          "latitude": -33.76570143,
+          "longitude": 151.1497417
+        }
+      ]
+    },
+    "structured": {
+      "number": {
+        "number": 26
+      },
+      "street": {
+        "name": "CALVERT",
+        "type": {
+          "code": "AVENUE",
+          "name": "AV"
+        },
+        "class": {
+          "code": "C",
+          "name": "CONFIRMED"
+        }
+      },
+      "confidence": 2,
+      "locality": {
+        "name": "KILLARA",
+        "class": {
+          "code": "G",
+          "name": "GAZETTED LOCALITY"
+        }
+      },
+      "postcode": "2071",
+      "lotNumber": {
+        "number": "48"
+      },
+      "state": {
+        "name": "NEW SOUTH WALES",
+        "abbreviation": "NSW"
+      }
+    },
+    "pid": "GANSW705091266",
+    "mla": [
+      "26 CALVERT AV",
+      "KILLARA NSW 2071"
+    ],
+    "sla": "26 CALVERT AV, KILLARA NSW 2071"
+  },
+  "/addresses?q=26%20calvert%20avenue": [
+    {
+      "sla": "26 CALVERT AV, KILLARA NSW 2071",
+      "ssla": "26 CALVERT AV, KILLARA NSW 2071",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, KILLARA NSW 2071",
+        "ssla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, KILLARA NSW 2071"
+      },
+      "score": 730.18335,
+      "pid": "GANSW705091266"
+    }
+  ],
+  "/addresses?q=26%20calvert": [
+    {
+      "sla": "26 CALVERT CR, JABIRU NT 0886",
+      "ssla": "26 CALVERT CR, JABIRU NT 0886",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> CR, JABIRU NT 0886",
+        "ssla": "<em>26</em> <em>CALVERT</em> CR, JABIRU NT 0886"
+      },
+      "score": 52.48278,
+      "pid": "GANT_703861575"
+    },
+    {
+      "sla": "26 CALVERT CCT, WOLLERT VIC 3750",
+      "ssla": "26 CALVERT CCT, WOLLERT VIC 3750",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> CCT, WOLLERT VIC 3750",
+        "ssla": "<em>26</em> <em>CALVERT</em> CCT, WOLLERT VIC 3750"
+      },
+      "score": 52.339836,
+      "pid": "GAVIC425817235"
+    },
+    {
+      "sla": "26 CALVERT ST, BAIRNSDALE VIC 3875",
+      "ssla": "26 CALVERT ST, BAIRNSDALE VIC 3875",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> ST, BAIRNSDALE VIC 3875",
+        "ssla": "<em>26</em> <em>CALVERT</em> ST, BAIRNSDALE VIC 3875"
+      },
+      "score": 52.339836,
+      "pid": "GAVIC420250840"
+    },
+    {
+      "sla": "26 CALVERT PDE, NEWPORT NSW 2106",
+      "ssla": "26 CALVERT PDE, NEWPORT NSW 2106",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> PDE, NEWPORT NSW 2106",
+        "ssla": "<em>26</em> <em>CALVERT</em> PDE, NEWPORT NSW 2106"
+      },
+      "score": 52.07585,
+      "pid": "GANSW706503902"
+    },
+    {
+      "sla": "26 CALVERT ST, COLAC VIC 3250",
+      "ssla": "26 CALVERT ST, COLAC VIC 3250",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> ST, COLAC VIC 3250",
+        "ssla": "<em>26</em> <em>CALVERT</em> ST, COLAC VIC 3250"
+      },
+      "score": 52.07585,
+      "pid": "GAVIC420705147"
+    },
+    {
+      "sla": "26 CALVERT ST, MARRICKVILLE NSW 2204",
+      "ssla": "26 CALVERT ST, MARRICKVILLE NSW 2204",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> ST, MARRICKVILLE NSW 2204",
+        "ssla": "<em>26</em> <em>CALVERT</em> ST, MARRICKVILLE NSW 2204"
+      },
+      "score": 52.07585,
+      "pid": "GANSW705304508"
+    },
+    {
+      "sla": "26 CALVERT ST, PORTLAND VIC 3305",
+      "ssla": "26 CALVERT ST, PORTLAND VIC 3305",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> ST, PORTLAND VIC 3305",
+        "ssla": "<em>26</em> <em>CALVERT</em> ST, PORTLAND VIC 3305"
+      },
+      "score": 52.07585,
+      "pid": "GAVIC421497443"
+    },
+    {
+      "sla": "26 CALVERT ST, TIWI NT 0810",
+      "ssla": "26 CALVERT ST, TIWI NT 0810",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> ST, TIWI NT 0810",
+        "ssla": "<em>26</em> <em>CALVERT</em> ST, TIWI NT 0810"
+      },
+      "score": 52.07585,
+      "pid": "GANT_703863324"
+    }
+  ],
+  "/addresses?q=26%20calvert%20avenue%20killara": [
+    {
+      "sla": "26 CALVERT AV, KILLARA NSW 2071",
+      "ssla": "26 CALVERT AV, KILLARA NSW 2071",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, <em>KILLARA</em> NSW 2071",
+        "ssla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, <em>KILLARA</em> NSW 2071"
+      },
+      "score": 62.590378,
+      "pid": "GANSW705091266"
+    }
+  ]
+}

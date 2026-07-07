@@ -27,3 +27,5 @@ next-env.d.ts
 .claude/
 instructions/
 docs/superpowers/
+CLAUDE.md
+addressr/
