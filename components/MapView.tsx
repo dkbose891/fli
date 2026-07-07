@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Map, { Layer, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre';
 import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
@@ -17,6 +17,16 @@ export default function MapView({ layers, activeLayers, selectedGeo, onSelectPar
 }) {
   const mapRef = useRef<MapRef | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
+  const [is3D, setIs3D] = useState(false);
+
+  // The Liberty basemap already contains a `building-3d` fill-extrusion layer
+  // (zoom >= 14), so "3D" is just a camera pitch — no extra layers or sources.
+  const toggle3D = useCallback(() => {
+    setIs3D((v) => {
+      mapRef.current?.easeTo({ pitch: v ? 0 : 55, duration: 600 });
+      return !v;
+    });
+  }, []);
 
   // MapLibre can initialise before the flex layout gives its container full
   // height, freezing the canvas small. Observe the wrapper and resize the map
@@ -58,6 +68,17 @@ export default function MapView({ layers, activeLayers, selectedGeo, onSelectPar
 
   return (
     <div ref={wrapRef} style={{ position:'absolute', inset:0 }}>
+      <button
+        onClick={toggle3D}
+        title={is3D ? 'Back to 2D' : 'Tilt to 3D (right-click-drag to rotate)'}
+        style={{
+          position:'absolute', top:12, left:12, zIndex:2,
+          background:'var(--panel)', color:'var(--text)', border:'1px solid var(--border)',
+          borderRadius:10, padding:'8px 12px', fontSize:13, fontWeight:600, cursor:'pointer',
+        }}
+      >
+        {is3D ? '2D' : '3D'}
+      </button>
       <Map ref={mapRef} initialViewState={{ longitude:151.2093, latitude:-33.8688, zoom:11 }}
            style={{ position:'absolute', inset:0 }} mapStyle={BASEMAP} cursor="pointer" onClick={onClick} onLoad={onLoad}>
         {[...activeLayers].map((name) => layers[name] && (
