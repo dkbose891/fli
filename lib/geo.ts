@@ -12,6 +12,45 @@ export function isInNSW(lng: number, lat: number): boolean {
   );
 }
 
+// Geodesic area of a polygon in m² (spherical excess on a WGS84 sphere, same
+// approach as turf/geojson-area). Needed because the NSW cadastre has
+// planlotarea = null for many old deposited plans.
+const EARTH_R = 6378137;
+const rad = (d: number) => (d * Math.PI) / 180;
+
+function ringArea(coords: number[][]): number {
+  const n = coords.length;
+  if (n < 3) return 0;
+  let total = 0;
+  for (let i = 0; i < n; i++) {
+    const p1 = coords[i];
+    const p2 = coords[(i + 1) % n];
+    const p3 = coords[(i + 2) % n];
+    total += (rad(p3[0]) - rad(p1[0])) * Math.sin(rad(p2[1]));
+  }
+  return (total * EARTH_R * EARTH_R) / 2;
+}
+
+function polygonArea(rings: number[][][]): number {
+  if (!rings?.length) return 0;
+  let area = Math.abs(ringArea(rings[0]));
+  for (let i = 1; i < rings.length; i++) area -= Math.abs(ringArea(rings[i])); // holes
+  return Math.max(area, 0);
+}
+
+export function areaM2(geometry: Geometry | null | undefined): number | null {
+  if (!geometry) return null;
+  if (geometry.type === 'Polygon') {
+    const a = polygonArea(geometry.coordinates as number[][][]);
+    return a > 0 ? a : null;
+  }
+  if (geometry.type === 'MultiPolygon') {
+    const a = (geometry.coordinates as number[][][][]).reduce((s, p) => s + polygonArea(p), 0);
+    return a > 0 ? a : null;
+  }
+  return null;
+}
+
 // A representative interior-ish point [lng, lat] for any geometry, or null.
 export function representativePoint(geometry: Geometry | null | undefined): { lng: number; lat: number } | null {
   if (!geometry) return null;

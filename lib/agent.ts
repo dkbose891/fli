@@ -69,6 +69,8 @@ export async function runAgentWithClient(ai: GoogleGenAI, message: string, histo
     ? `\n\n[Selected parcel: ${selectedParcel.lotidstring}${
         selectedParcel.address ? ` — ${selectedParcel.address}` : ''
       }${
+        selectedParcel.planlotarea ? `, area ~${Math.round(selectedParcel.planlotarea)} m²` : ''
+      }${
         selectedParcel.point
           ? ` at lng=${selectedParcel.point.lng}, lat=${selectedParcel.point.lat} — use these coordinates for point-based tools (zoning, bushfire, flood, suburb)`
           : ''

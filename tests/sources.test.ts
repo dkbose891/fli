@@ -52,3 +52,9 @@ describe('cadastre', () => {
     expect(params.geometry).toBe('151.2,-33.8');
   });
 });
+
+it('heritage outFields must not request SYM_CODE (layer has no such field)', async () => {
+  const { PLANNING_FIELDS } = await import('../lib/sources/planning');
+  expect(PLANNING_FIELDS.heritage).not.toContain('SYM_CODE');
+  expect(PLANNING_FIELDS.heritage).toContain('H_NAME');
+});

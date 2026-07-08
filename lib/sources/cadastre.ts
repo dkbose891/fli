@@ -1,5 +1,5 @@
 import { arcgisQuery, pointParams } from '@/lib/arcgis';
-import { representativePoint } from '@/lib/geo';
+import { areaM2, representativePoint } from '@/lib/geo';
 import type { SourceResult } from '@/types/nsw';
 
 const SERVER = 'https://portal.spatial.nsw.gov.au/server/rest/services/NSW_Land_Parcel_Property_Theme/FeatureServer';
@@ -9,12 +9,26 @@ const LOT_FIELDS = 'lotidstring,plannumber,planlabel,planlotarea,planlotareaunit
 
 const cap = (n: number) => Math.min(Math.max(1, Math.floor(n) || 200), 500);
 
-export function parcelByWhere(where: string, maxFeatures = 200): Promise<SourceResult> {
-  return arcgisQuery(LOT, { where, outFields: LOT_FIELDS, resultRecordCount: cap(maxFeatures), orderByFields: 'objectid' });
+// The cadastre has planlotarea = null for many old plans (e.g. 1900s DPs).
+// We hold the boundary polygon, so fall back to a computed geodesic area.
+function withComputedArea(res: SourceResult): SourceResult {
+  const summary = res.geojson.features.map((f) => {
+    const props = { ...(f.properties ?? {}) };
+    if (props.planlotarea == null) {
+      const a = areaM2(f.geometry);
+      if (a) props.planlotarea_approx_m2 = Math.round(a);
+    }
+    return props;
+  });
+  return { ...res, summary };
 }
 
-export function parcelAtPoint(lng: number, lat: number): Promise<SourceResult> {
-  return arcgisQuery(LOT, pointParams(lng, lat, LOT_FIELDS));
+export async function parcelByWhere(where: string, maxFeatures = 200): Promise<SourceResult> {
+  return withComputedArea(await arcgisQuery(LOT, { where, outFields: LOT_FIELDS, resultRecordCount: cap(maxFeatures), orderByFields: 'objectid' }));
+}
+
+export async function parcelAtPoint(lng: number, lat: number): Promise<SourceResult> {
+  return withComputedArea(await arcgisQuery(LOT, pointParams(lng, lat, LOT_FIELDS)));
 }
 
 export async function geocodeAddress(address: string, maxFeatures = 5): Promise<SourceResult> {

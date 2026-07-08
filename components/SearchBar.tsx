@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import type { FeatureCollection } from 'geojson';
 import type { ParcelRef } from '@/types/nsw';
-import { isInNSW } from '@/lib/geo';
+import { areaM2, isInNSW } from '@/lib/geo';
 
 interface Match { sla: string; pid: string }
 
@@ -58,8 +58,9 @@ export default function SearchBar({ onSelectParcel }: {
       const f = pd.geojson?.features?.[0];
       if (!pr.ok || !f) { setError('No parcel found at that address.'); return; }
       const p = f.properties ?? {};
+      const area = p.planlotarea ?? (areaM2(f.geometry) ? Math.round(areaM2(f.geometry)!) : null);
       onSelectParcel(
-        { lotidstring: p.lotidstring, planlabel: p.planlabel, planlotarea: p.planlotarea, point: { lng, lat }, address: m.sla },
+        { lotidstring: p.lotidstring, planlabel: p.planlabel, planlotarea: area, point: { lng, lat }, address: m.sla },
         pd.geojson,
       );
     } catch {

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Map, { Layer, Source, type MapLayerMouseEvent, type MapRef } from 'react-map-gl/maplibre';
 import type { FeatureCollection } from 'geojson';
 import type { LayerName, ParcelRef } from '@/types/nsw';
-import { isInNSW, representativePoint } from '@/lib/geo';
+import { areaM2, isInNSW, representativePoint } from '@/lib/geo';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 const BASEMAP = 'https://tiles.openfreemap.org/styles/liberty';
@@ -59,8 +59,9 @@ export default function MapView({ layers, activeLayers, selectedGeo, onSelectPar
       const f = d.geojson?.features?.[0];
       if (!f) return;
       const p = f.properties ?? {};
+      const area = p.planlotarea ?? (areaM2(f.geometry) ? Math.round(areaM2(f.geometry)!) : null);
       onSelectParcel(
-        { lotidstring: p.lotidstring, planlabel: p.planlabel, planlotarea: p.planlotarea, point: { lng, lat } },
+        { lotidstring: p.lotidstring, planlabel: p.planlabel, planlotarea: area, point: { lng, lat } },
         d.geojson,
       );
     } catch { /* ignore click misses */ }

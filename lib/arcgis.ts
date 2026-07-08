@@ -20,7 +20,7 @@ interface EsriResp {
 }
 
 export function esriToGeoJSON(data: EsriResp): SourceResult {
-  if (data.error) throw new Error(`Cadastre query rejected: ${data.error.message ?? 'invalid query'}.`);
+  if (data.error) throw new Error(`NSW service query rejected: ${data.error.message ?? 'invalid query'}.`);
   const esri = data.features ?? [];
   const features: Feature[] = esri
     .filter((f) => f.geometry)
