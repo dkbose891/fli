@@ -31,6 +31,12 @@ export async function parcelAtPoint(lng: number, lat: number): Promise<SourceRes
   return withComputedArea(await arcgisQuery(LOT, pointParams(lng, lat, LOT_FIELDS)));
 }
 
+// Property (not lot) at a point — the propid is the key into the Valuer
+// General valuation service.
+export function propertyAtPoint(lng: number, lat: number): Promise<SourceResult> {
+  return arcgisQuery(PROPERTY, pointParams(lng, lat, 'propid,address,principaladdresstype'));
+}
+
 export async function geocodeAddress(address: string, maxFeatures = 5): Promise<SourceResult> {
   const safe = address.toUpperCase().replace(/'/g, "''");
   const res = await arcgisQuery(PROPERTY, {
