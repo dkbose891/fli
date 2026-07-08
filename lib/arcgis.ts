@@ -32,20 +32,33 @@ export function esriToGeoJSON(data: EsriResp): SourceResult {
   };
 }
 
-export async function arcgisQuery(base: string, params: Record<string, string | number | boolean>): Promise<SourceResult> {
+async function fetchOnce(url: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  let res: Response;
   try {
-    res = await fetch(buildQueryUrl(base, params), {
+    return await fetch(url, {
       headers: { Accept: 'application/json', 'User-Agent': 'nsw-place-analyser' },
       signal: controller.signal,
     });
-  } catch (err) {
+  } finally {
     clearTimeout(timer);
-    throw new Error(err instanceof Error && err.name === 'AbortError' ? 'NSW service timed out.' : 'Could not reach NSW service.');
   }
-  clearTimeout(timer);
+}
+
+export async function arcgisQuery(base: string, params: Record<string, string | number | boolean>): Promise<SourceResult> {
+  const url = buildQueryUrl(base, params);
+  // The NSW ArcGIS servers intermittently hang then recover instantly — one
+  // retry turns most of those into a fast success instead of a user-facing 502.
+  let res: Response;
+  try {
+    res = await fetchOnce(url);
+  } catch {
+    try {
+      res = await fetchOnce(url);
+    } catch (err) {
+      throw new Error(err instanceof Error && err.name === 'AbortError' ? 'NSW service timed out.' : 'Could not reach NSW service.');
+    }
+  }
   if (!res.ok) throw new Error(`NSW service returned HTTP ${res.status}.`);
   return esriToGeoJSON((await res.json()) as EsriResp);
 }
