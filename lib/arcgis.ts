@@ -2,7 +2,7 @@ import { arcgisToGeoJSON } from '@terraformer/arcgis';
 import type { Feature, Geometry } from 'geojson';
 import type { SourceResult } from '@/types/nsw';
 
-const TIMEOUT_MS = 15_000;
+const TIMEOUT_MS = 8_000;
 
 export function buildQueryUrl(base: string, params: Record<string, string | number | boolean>): string {
   const defaults: Record<string, string> = { returnGeometry: 'true', outSR: '4326', f: 'json' };
