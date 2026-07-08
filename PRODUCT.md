@@ -50,7 +50,7 @@ The product only claims what its sources can support:
 ## Principles
 
 1. **Token discipline** — map interaction and data fetching are deterministic API calls; the LLM is only used to reason and narrate. Clicking is free; asking is cheap.
-2. **No storage** — every answer is fetched live at question time; nothing to go stale.
+2. **No storage** — every answer is fetched live at question time; nothing to go stale. One pragmatic exception: previously-seen queries are served from a committed response snapshot so the demo survives upstream outages; unseen queries always go live.
 3. **Honest by construction** — tools return what the source returned; gaps are stated, never filled in.
 
 ## Backlog

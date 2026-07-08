@@ -1,6 +1,7 @@
 import { arcgisToGeoJSON } from '@terraformer/arcgis';
 import type { Feature, Geometry } from 'geojson';
 import type { SourceResult } from '@/types/nsw';
+import { cacheGet, cachePut } from '@/lib/nswcache';
 
 const TIMEOUT_MS = 8_000;
 
@@ -47,6 +48,8 @@ async function fetchOnce(url: string): Promise<Response> {
 
 export async function arcgisQuery(base: string, params: Record<string, string | number | boolean>): Promise<SourceResult> {
   const url = buildQueryUrl(base, params);
+  const hit = cacheGet(url);
+  if (hit !== undefined) return esriToGeoJSON(hit as EsriResp);
   // The NSW ArcGIS servers intermittently hang then recover instantly — one
   // retry turns most of those into a fast success instead of a user-facing 502.
   let res: Response;
@@ -60,7 +63,9 @@ export async function arcgisQuery(base: string, params: Record<string, string | 
     }
   }
   if (!res.ok) throw new Error(`NSW service returned HTTP ${res.status}.`);
-  return esriToGeoJSON((await res.json()) as EsriResp);
+  const data = (await res.json()) as EsriResp;
+  if (!data.error) cachePut(url, data);
+  return esriToGeoJSON(data);
 }
 
 export function pointParams(lng: number, lat: number, outFields: string): Record<string, string | number> {

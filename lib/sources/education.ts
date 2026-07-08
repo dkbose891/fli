@@ -1,5 +1,6 @@
 import type { SourceResult } from '@/types/nsw';
 import type { FeatureCollection } from 'geojson';
+import { cacheGet, cachePut } from '@/lib/nswcache';
 
 // NSW DoE school catchments via the School Finder's public CARTO backend.
 // Undocumented but official-app infrastructure; returns GeoJSON natively.
@@ -17,18 +18,22 @@ export function catchmentSql(lng: number, lat: number): string {
 
 export async function catchmentsAtPoint(lng: number, lat: number): Promise<SourceResult> {
   const url = `${CARTO}?q=${encodeURIComponent(catchmentSql(lng, lat))}&format=GeoJSON`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  let res: Response;
-  try {
-    res = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
-  } catch (err) {
+  let geojson = cacheGet(url) as FeatureCollection | undefined;
+  if (!geojson) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    let res: Response;
+    try {
+      res = await fetch(url, { headers: { Accept: 'application/json' }, signal: controller.signal });
+    } catch (err) {
+      clearTimeout(timer);
+      throw new Error(err instanceof Error && err.name === 'AbortError' ? 'School catchment service timed out.' : 'Could not reach the school catchment service.');
+    }
     clearTimeout(timer);
-    throw new Error(err instanceof Error && err.name === 'AbortError' ? 'School catchment service timed out.' : 'Could not reach the school catchment service.');
+    if (!res.ok) throw new Error(`School catchment service returned HTTP ${res.status}.`);
+    geojson = (await res.json()) as FeatureCollection;
+    cachePut(url, geojson);
   }
-  clearTimeout(timer);
-  if (!res.ok) throw new Error(`School catchment service returned HTTP ${res.status}.`);
-  const geojson = (await res.json()) as FeatureCollection;
   const features = geojson.features ?? [];
   return {
     geojson: { type: 'FeatureCollection', features },
