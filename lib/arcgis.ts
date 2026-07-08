@@ -1,8 +1,9 @@
 import { arcgisToGeoJSON } from '@terraformer/arcgis';
 import type { Feature, Geometry } from 'geojson';
 import type { SourceResult } from '@/types/nsw';
+import { cacheGet, cachePut } from '@/lib/nswcache';
 
-const TIMEOUT_MS = 15_000;
+const TIMEOUT_MS = 8_000;
 
 export function buildQueryUrl(base: string, params: Record<string, string | number | boolean>): string {
   const defaults: Record<string, string> = { returnGeometry: 'true', outSR: '4326', f: 'json' };
@@ -32,22 +33,39 @@ export function esriToGeoJSON(data: EsriResp): SourceResult {
   };
 }
 
-export async function arcgisQuery(base: string, params: Record<string, string | number | boolean>): Promise<SourceResult> {
+async function fetchOnce(url: string): Promise<Response> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  let res: Response;
   try {
-    res = await fetch(buildQueryUrl(base, params), {
+    return await fetch(url, {
       headers: { Accept: 'application/json', 'User-Agent': 'nsw-place-analyser' },
       signal: controller.signal,
     });
-  } catch (err) {
+  } finally {
     clearTimeout(timer);
-    throw new Error(err instanceof Error && err.name === 'AbortError' ? 'NSW service timed out.' : 'Could not reach NSW service.');
   }
-  clearTimeout(timer);
+}
+
+export async function arcgisQuery(base: string, params: Record<string, string | number | boolean>): Promise<SourceResult> {
+  const url = buildQueryUrl(base, params);
+  const hit = cacheGet(url);
+  if (hit !== undefined) return esriToGeoJSON(hit as EsriResp);
+  // The NSW ArcGIS servers intermittently hang then recover instantly — one
+  // retry turns most of those into a fast success instead of a user-facing 502.
+  let res: Response;
+  try {
+    res = await fetchOnce(url);
+  } catch {
+    try {
+      res = await fetchOnce(url);
+    } catch (err) {
+      throw new Error(err instanceof Error && err.name === 'AbortError' ? 'NSW service timed out.' : 'Could not reach NSW service.');
+    }
+  }
   if (!res.ok) throw new Error(`NSW service returned HTTP ${res.status}.`);
-  return esriToGeoJSON((await res.json()) as EsriResp);
+  const data = (await res.json()) as EsriResp;
+  if (!data.error) cachePut(url, data);
+  return esriToGeoJSON(data);
 }
 
 export function pointParams(lng: number, lat: number, outFields: string): Record<string, string | number> {

@@ -22,8 +22,10 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-it('normalises queries (trim, lowercase, collapse whitespace)', () => {
+it('normalises queries (trim, lowercase, punctuation, whitespace)', () => {
   expect(normaliseQuery('  26  Calvert Avenue   KILLARA ')).toBe('26 calvert avenue killara');
+  expect(normaliseQuery('26 Calvert Avenue, Killara')).toBe('26 calvert avenue killara');
+  expect(normaliseQuery('26 CALVERT AV, KILLARA NSW 2071')).toBe('26 calvert av killara nsw 2071');
 });
 
 it('takes pid from the result, falling back to the HATEOAS self href', () => {

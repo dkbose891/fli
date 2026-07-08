@@ -1,5 +1,7 @@
 # NSW Place Analyser
 
+> Product view — personas, question map, roadmap: see [PRODUCT.md](PRODUCT.md).
+
 Ask about any NSW property in plain English, or just click the map. One Gemini agent on Vertex AI answers — grounded in **live** NSW government data — and draws the relevant layers (parcels, zoning, bushfire, flood, suburbs) right on the map. No data stored; every query hits the source services live.
 
 ![Architecture](docs/architecture.svg)

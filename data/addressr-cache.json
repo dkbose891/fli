@@ -177,5 +177,17 @@
       "score": 62.590378,
       "pid": "GANSW705091266"
     }
+  ],
+  "/addresses?q=26%20calvert%20av%2C%20killara%20nsw%202071": [
+    {
+      "sla": "26 CALVERT AV, KILLARA NSW 2071",
+      "ssla": "26 CALVERT AV, KILLARA NSW 2071",
+      "highlight": {
+        "sla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, <em>KILLARA</em> <em>NSW</em> <em>2071</em>",
+        "ssla": "<em>26</em> <em>CALVERT</em> <em>AV</em>, <em>KILLARA</em> <em>NSW</em> <em>2071</em>"
+      },
+      "score": 150.43073,
+      "pid": "GANSW705091266"
+    }
   ]
 }

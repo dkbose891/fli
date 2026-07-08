@@ -80,7 +80,10 @@ async function addressrGet(path: string): Promise<unknown> {
 }
 
 export function normaliseQuery(q: string): string {
-  return q.trim().toLowerCase().replace(/\s+/g, ' ');
+  // Strip punctuation too: "26 calvert avenue, killara" and
+  // "26 calvert avenue killara" must share one cache entry (each distinct
+  // key is a live RapidAPI call).
+  return q.trim().toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ');
 }
 
 export function pidOf(m: AddressrMatch): string | null {

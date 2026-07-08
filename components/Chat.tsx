@@ -1,12 +1,61 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { FeatureCollection } from 'geojson';
 import type { ParcelRef } from '@/types/nsw';
 
 interface Message {
   role: 'user' | 'model';
   text: string;
+}
+
+const ANALYSE_PROMPT =
+  'Give me a full report on this parcel. Use the relevant tools in parallel (parcel, zoning, FSR, height, lot size, heritage, bushfire, flood, land value, recent sales, school catchments, DAs nearby, development potential). Structure the answer under these exact markdown headings: ## Snapshot, ## Planning, ## Hazards, ## Value & market, ## Schools & area. Keep each section to short bullet points.';
+
+// Minimal markdown-section renderer for report-style replies: "## " headings
+// become card sections; "* "/"- " lines become bullets; **bold** is bolded.
+// Anything without headings renders as the usual plain bubble.
+function inline(text: string) {
+  return text.split(/\*\*([^*]+)\*\*/g).map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part));
+}
+
+function Body({ text }: { text: string }) {
+  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
+  const out: ReactNode[] = [];
+  let bullets: string[] = [];
+  const flush = () => {
+    if (bullets.length) out.push(<ul key={out.length}>{bullets.map((b, i) => <li key={i}>{inline(b)}</li>)}</ul>);
+    bullets = [];
+  };
+  for (const l of lines) {
+    if (/^[*-]\s+/.test(l)) bullets.push(l.replace(/^[*-]\s+/, ''));
+    else { flush(); out.push(<p key={out.length}>{inline(l)}</p>); }
+  }
+  flush();
+  return <>{out}</>;
+}
+
+function ModelText({ text }: { text: string }) {
+  if (!/^##\s/m.test(text)) return <>{text}</>;
+  const idx = text.search(/^##\s/m);
+  const preamble = text.slice(0, idx).trim();
+  const sections = text.slice(idx).split(/^##\s+/m).filter((s) => s.trim());
+  return (
+    <div className="report">
+      {preamble && <p className="preamble">{inline(preamble)}</p>}
+      {sections.map((s, i) => {
+        const nl = s.indexOf('\n');
+        const title = (nl === -1 ? s : s.slice(0, nl)).trim();
+        const body = nl === -1 ? '' : s.slice(nl + 1);
+        return (
+          <section key={i}>
+            <h3>{title}</h3>
+            <Body text={body} />
+          </section>
+        );
+      })}
+    </div>
+  );
 }
 
 const SUGGESTIONS = [
@@ -103,7 +152,7 @@ export default function Chat({
 
         {messages.map((m, i) => (
           <div key={i} className={`bubble ${m.role}`}>
-            {m.text}
+            {m.role === 'model' ? <ModelText text={m.text} /> : m.text}
           </div>
         ))}
 
@@ -121,7 +170,7 @@ export default function Chat({
         <div className="analyse-offer">
           <button
             className="analyse-btn"
-            onClick={() => { setOfferAnalysis(false); send('Tell me everything about this parcel — zoning, hazards, size, anything notable.'); }}
+            onClick={() => { setOfferAnalysis(false); send(ANALYSE_PROMPT); }}
             disabled={loading}
           >
             Analyse this parcel
@@ -225,6 +274,30 @@ export default function Chat({
           border: 1px solid var(--border);
           border-bottom-left-radius: 4px;
         }
+        .bubble.model :global(.report) {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          white-space: normal; /* the bubble's pre-wrap would double-space structured content */
+        }
+        .bubble.model :global(.report h3) {
+          margin: 0 0 4px;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.6px;
+          color: var(--accent);
+        }
+        .bubble.model :global(.report section) {
+          border-top: 1px solid var(--border);
+          padding-top: 8px;
+        }
+        .bubble.model :global(.report section:first-of-type) {
+          border-top: none;
+          padding-top: 0;
+        }
+        .bubble.model :global(.report p) { margin: 0 0 4px; }
+        .bubble.model :global(.report ul) { margin: 0; padding-left: 16px; }
+        .bubble.model :global(.report li) { margin: 2px 0; }
         .thinking {
           color: var(--muted);
           font-style: italic;
