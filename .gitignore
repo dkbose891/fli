@@ -29,3 +29,6 @@ instructions/
 docs/superpowers/
 CLAUDE.md
 addressr/
+
+# Word exports of study docs (regenerate with pandoc)
+study-docs/
