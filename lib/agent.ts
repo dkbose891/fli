@@ -103,7 +103,17 @@ export async function runAgentWithClient(ai: GoogleGenAI, message: string, histo
   return { reply: final.text ?? '', layers, feature_count };
 }
 
+function createGenAI(): GoogleGenAI {
+  // Prefer Gemini Developer API when an API key is present; otherwise Vertex AI + ADC.
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey) return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({
+    vertexai: true,
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    location: process.env.GOOGLE_CLOUD_LOCATION,
+  });
+}
+
 export function runAgent(message: string, history: { role: 'user'|'model'; text: string }[] = [], selectedParcel: ParcelRef | null = null): Promise<AgentResult> {
-  const ai = new GoogleGenAI({ vertexai: true, project: process.env.GOOGLE_CLOUD_PROJECT, location: process.env.GOOGLE_CLOUD_LOCATION });
-  return runAgentWithClient(ai, message, history, selectedParcel);
+  return runAgentWithClient(createGenAI(), message, history, selectedParcel);
 }

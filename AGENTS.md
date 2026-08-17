@@ -14,7 +14,10 @@ This is a single-service **Next.js 15 (App Router) / React 19** app — the "NSW
 The app has two independent backends, and only one needs credentials:
 
 1. **Deterministic layer/map path — no credentials needed.** Clicking a parcel and toggling layers (`parcels/zoning/bushfire/flood/suburbs`) hit `GET /api/layer/[name]` which proxies **live NSW government ArcGIS services** over the public internet. This works out of the box and is the reliable way to demo the app end-to-end. Example: `curl "http://localhost:3000/api/layer/parcels?point=151.2093,-33.8688"`. Occasional single-request 502s from the upstream NSW services are transient — just retry.
-2. **Chat agent path — requires Google Cloud.** `POST /api/chat` uses `@google/genai` in **Vertex AI** mode via **Application Default Credentials** (no key files). It needs a real `GOOGLE_CLOUD_PROJECT` (see `.env.example`) plus `gcloud auth application-default login` with Vertex AI enabled. Without those, chat returns a 500; the map/layers still work. Unit tests mock the Gemini client, so tests never need GCP.
+2. **Chat agent path — Gemini auth is dual-mode** (`lib/agent.ts` `createGenAI()`):
+   - If `GEMINI_API_KEY` is set → **Gemini Developer API** (AI Studio). Prefer putting the key in a gitignored `.env.local` (or inject it as a Cloud Agent secret). For new API-key projects, `gemini-2.5-flash` may be blocked — use `GEMINI_MODEL=gemini-flash-latest` (or another listed model). The key also needs active AI Studio billing/credits.
+   - Else → **Vertex AI + Application Default Credentials** using `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION` from `.env` (see `.env.example`).
+   - Without either, chat returns a 500; map/layers still work. Unit tests mock the Gemini client, so tests never need credentials.
 
 ### Testing
 
@@ -24,4 +27,4 @@ The app has two independent backends, and only one needs credentials:
 
 ### Env
 
-- Copy `.env.example` to `.env`. Only `GOOGLE_CLOUD_PROJECT` matters for chat; the map/layer path needs no env vars.
+- Copy `.env.example` to `.env`. For chat: either set `GEMINI_API_KEY` (Developer API) or configure Vertex ADC + `GOOGLE_CLOUD_PROJECT`. The map/layer path needs no env vars. Never commit `.env` / `.env.local`.
