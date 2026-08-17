@@ -103,7 +103,30 @@ export async function runAgentWithClient(ai: GoogleGenAI, message: string, histo
   return { reply: final.text ?? '', layers, feature_count };
 }
 
+/** Prefer Gemini Developer API key (Cursor Cloud); fall back to Vertex + ADC (local). */
+export function createGenAIClient(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (apiKey) return new GoogleGenAI({ apiKey });
+
+  const useVertex = process.env.GOOGLE_GENAI_USE_VERTEXAI !== 'false';
+  if (useVertex) {
+    const project = process.env.GOOGLE_CLOUD_PROJECT;
+    if (!project || project === 'your-project-id') {
+      throw new Error(
+        'Missing GEMINI_API_KEY (or set GOOGLE_CLOUD_PROJECT + ADC for Vertex). ' +
+          'Add GEMINI_API_KEY as a Cursor Cloud secret and restart the agent.',
+      );
+    }
+    return new GoogleGenAI({
+      vertexai: true,
+      project,
+      location: process.env.GOOGLE_CLOUD_LOCATION ?? 'australia-southeast1',
+    });
+  }
+
+  throw new Error('Set GEMINI_API_KEY, or enable Vertex with GOOGLE_CLOUD_PROJECT + ADC.');
+}
+
 export function runAgent(message: string, history: { role: 'user'|'model'; text: string }[] = [], selectedParcel: ParcelRef | null = null): Promise<AgentResult> {
-  const ai = new GoogleGenAI({ vertexai: true, project: process.env.GOOGLE_CLOUD_PROJECT, location: process.env.GOOGLE_CLOUD_LOCATION });
-  return runAgentWithClient(ai, message, history, selectedParcel);
+  return runAgentWithClient(createGenAIClient(), message, history, selectedParcel);
 }
