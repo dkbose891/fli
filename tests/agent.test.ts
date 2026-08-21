@@ -19,8 +19,20 @@ vi.mock('../lib/sources/hazard', () => ({
   floodAtPoint: vi.fn().mockResolvedValue({ geojson:{type:'FeatureCollection',features:[]}, feature_count:0, summary:[] }),
 }));
 
-import { dispatchTool } from '../lib/agent';
+import { dispatchTool, createGenAIClient } from '../lib/agent';
 import { parcelByWhere } from '../lib/sources/cadastre';
+
+it('createGenAIClient prefers GEMINI_API_KEY over Vertex', () => {
+  const prevKey = process.env.GEMINI_API_KEY;
+  const prevProject = process.env.GOOGLE_CLOUD_PROJECT;
+  process.env.GEMINI_API_KEY = 'test-key-not-real';
+  delete process.env.GOOGLE_CLOUD_PROJECT;
+  expect(() => createGenAIClient()).not.toThrow();
+  delete process.env.GEMINI_API_KEY;
+  expect(() => createGenAIClient()).toThrow(/GEMINI_API_KEY/);
+  if (prevKey === undefined) delete process.env.GEMINI_API_KEY; else process.env.GEMINI_API_KEY = prevKey;
+  if (prevProject === undefined) delete process.env.GOOGLE_CLOUD_PROJECT; else process.env.GOOGLE_CLOUD_PROJECT = prevProject;
+});
 
 it('routes query_parcel to parcelByWhere with args', async () => {
   await dispatchTool('query_parcel', { where: "plannumber=1", max_features: 50 });
