@@ -3,6 +3,12 @@ import type { FeatureCollection } from 'geojson';
 import type { SourceResult, ParcelRef } from '@/types/nsw';
 import { parcelByWhere, parcelAtPoint, propertyAtPoint, geocodeAddress } from './sources/cadastre';
 import { fsrAtPoint, heightAtPoint, lotSizeAtPoint, heritageAtPoint } from './sources/planning';
+import { builtCharacterAtPoint, specialCharacterAtPoint, nativeVegetationAtPoint } from './sources/provisions';
+import { landslideAtPoint, historicFireAtPoint, airportNoiseAtPoint } from './sources/hazard';
+import { easementsAtPoint } from './sources/easements';
+import { roadHierarchyAtPoint } from './sources/transport';
+import { electricityAtPoint } from './sources/electricity';
+import { parksNear } from './sources/poi';
 import { landValueByPropid, recentSalesNear } from './sources/valuation';
 import { catchmentsAtPoint } from './sources/education';
 import { dasNear } from './sources/da';
@@ -25,6 +31,19 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   { name: 'query_heritage', description: 'Heritage listing at a point.', parameters: PT },
   { name: 'query_bushfire', description: 'Bush fire prone land category at a point.', parameters: PT },
   { name: 'query_flood',    description: 'Whether a point intersects known flood extents.', parameters: PT },
+  { name: 'query_easements', description: 'Digitised easements on the lot at a point (easementtype, easementwidth). Cadastre polygons only — not a title search; non-digitised easements may be missing.', parameters: PT },
+  { name: 'query_built_character', description: 'Built Character Map overlay at a point (ePlanning Local Provisions).', parameters: PT },
+  { name: 'query_special_character', description: 'Special Character Areas Map overlay at a point.', parameters: PT },
+  { name: 'query_native_vegetation', description: 'Significant Native Vegetation Map overlay at a point.', parameters: PT },
+  { name: 'query_landslide', description: 'Landslide Risk Land overlay at a point.', parameters: PT },
+  { name: 'query_historic_fire', description: 'Whether a point intersects a historic bushfire footprint (NSW RFS fire history).', parameters: PT },
+  { name: 'query_road_hierarchy', description: 'Nearest road function hierarchy classes within 200 m (Motorway, Arterial, Local, etc.).',
+    parameters: { type: Type.OBJECT, properties: { lng: { type: Type.NUMBER }, lat: { type: Type.NUMBER }, radius_m: { type: Type.INTEGER } }, required: ['lng','lat'] } },
+  { name: 'query_electricity', description: 'Electricity DNSP (Essential Energy / Ausgrid / Endeavour) and nearby open-data distribution assets. Indicative only — not a before-you-dig authority.',
+    parameters: { type: Type.OBJECT, properties: { lng: { type: Type.NUMBER }, lat: { type: Type.NUMBER }, radius_m: { type: Type.INTEGER } }, required: ['lng','lat'] } },
+  { name: 'query_parks_nearby', description: 'Parks, reserves and recreation POI within radius (default 500 m).',
+    parameters: { type: Type.OBJECT, properties: { lng: { type: Type.NUMBER }, lat: { type: Type.NUMBER }, radius_m: { type: Type.INTEGER } }, required: ['lng','lat'] } },
+  { name: 'query_airport_noise', description: 'Aircraft noise ANEF planning contour at a point (EPI Airport Noise). ANEF land-use contour — not flights-per-day frequency.', parameters: PT },
   { name: 'query_suburb',   description: 'Suburb / LGA at a point.', parameters: PT },
   { name: 'query_land_value', description: 'Valuer General land value history (5 years) for the property at a point. Unimproved LAND value — not a market/sale price; say so.', parameters: PT },
   { name: 'query_recent_sales', description: 'Most recent property sales near a point (price, date, address, lot size), default 500 m radius.',
@@ -52,6 +71,16 @@ const HANDLERS: Record<string, (args: any) => Promise<unknown>> = {
   query_heritage: pt(heritageAtPoint),
   query_bushfire: layer('bushfire'),
   query_flood: layer('flood'),
+  query_easements: pt(easementsAtPoint),
+  query_built_character: pt(builtCharacterAtPoint),
+  query_special_character: pt(specialCharacterAtPoint),
+  query_native_vegetation: pt(nativeVegetationAtPoint),
+  query_landslide: pt(landslideAtPoint),
+  query_historic_fire: pt(historicFireAtPoint),
+  query_road_hierarchy: (a) => roadHierarchyAtPoint(a.lng, a.lat, a.radius_m ?? 200),
+  query_electricity: (a) => electricityAtPoint(a.lng, a.lat, a.radius_m ?? 200),
+  query_parks_nearby: (a) => parksNear(a.lng, a.lat, a.radius_m ?? 500),
+  query_airport_noise: pt(airportNoiseAtPoint),
   query_suburb: layer('suburbs'),
   query_land_value: async (a) => {
     const prop = await propertyAtPoint(a.lng, a.lat);
@@ -93,7 +122,7 @@ export async function dispatchTool(name: string, args: Record<string, unknown>):
 const MODEL = process.env.GEMINI_MODEL ?? 'gemini-2.5-flash';
 const MAX_STEPS = 4;
 
-const SYSTEM = `You are a NSW place analyser. Use the tools to answer with official NSW data, grounding answers in returned parcel IDs (lotidstring), zone classes, dollar figures, school names, etc. When the user has selected a parcel, treat "this/here" as that parcel. For full "tell me everything" requests, call the relevant spatial tools in parallel. Planning/hazard data is indicative, not legal advice — say so. Land values are Valuer General UNIMPROVED land values, not market prices — always make that distinction. Development potential is arithmetic on mapped control bands, not planning advice. Sale prices come from registered transfers and may lag the market. Ownership is not available in public data; say so plainly. For general-knowledge or out-of-NSW questions use wikipedia_lookup and clearly note it is general knowledge, not NSW cadastre data. Never invent parcels or figures.`;
+const SYSTEM = `You are a NSW place analyser. Use the tools to answer with official NSW data, grounding answers in returned parcel IDs (lotidstring), zone classes, dollar figures, school names, etc. When the user has selected a parcel, treat "this/here" as that parcel. For full "tell me everything" requests, call the relevant spatial tools in parallel. Planning/hazard data is indicative, not legal advice — say so. Easements are digitised cadastre polygons only; covenants and register interests need a paid title search. Historic fire shows past footprints, separate from current bushfire-prone land. Airport noise is ANEF planning contour, not flights-per-day. Electricity assets are open DNSP data, not before-you-dig. Land values are Valuer General UNIMPROVED land values, not market prices — always make that distinction. Development potential is arithmetic on mapped control bands, not planning advice. Sale prices come from registered transfers and may lag the market. Ownership is not available in public data; say so plainly. For general-knowledge or out-of-NSW questions use wikipedia_lookup and clearly note it is general knowledge, not NSW cadastre data. Never invent parcels or figures.`;
 
 export interface AgentResult { reply: string; layers: Record<string, FeatureCollection>; feature_count: number }
 
@@ -140,7 +169,16 @@ export async function runAgentWithClient(ai: GoogleGenAI, message: string, histo
   return { reply: final.text ?? '', layers, feature_count };
 }
 
+function createGenAI(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey) return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({
+    vertexai: true,
+    project: process.env.GOOGLE_CLOUD_PROJECT,
+    location: process.env.GOOGLE_CLOUD_LOCATION,
+  });
+}
+
 export function runAgent(message: string, history: { role: 'user'|'model'; text: string }[] = [], selectedParcel: ParcelRef | null = null): Promise<AgentResult> {
-  const ai = new GoogleGenAI({ vertexai: true, project: process.env.GOOGLE_CLOUD_PROJECT, location: process.env.GOOGLE_CLOUD_LOCATION });
-  return runAgentWithClient(ai, message, history, selectedParcel);
+  return runAgentWithClient(createGenAI(), message, history, selectedParcel);
 }

@@ -17,6 +17,9 @@ vi.mock('../lib/sources/planning', () => ({
 vi.mock('../lib/sources/hazard', () => ({
   bushfireAtPoint: vi.fn().mockResolvedValue({ geojson:{type:'FeatureCollection',features:[{type:'Feature',geometry:{type:'Point',coordinates:[151.2,-33.8]},properties:{}}]}, feature_count:1, summary:[{}] }),
   floodAtPoint: vi.fn().mockResolvedValue({ geojson:{type:'FeatureCollection',features:[]}, feature_count:0, summary:[] }),
+  landslideAtPoint: vi.fn().mockResolvedValue({ geojson:{type:'FeatureCollection',features:[]}, feature_count:0, summary:[] }),
+  historicFireAtPoint: vi.fn().mockResolvedValue({ geojson:{type:'FeatureCollection',features:[]}, feature_count:0, summary:[] }),
+  airportNoiseAtPoint: vi.fn().mockResolvedValue({ geojson:{type:'FeatureCollection',features:[]}, feature_count:0, summary:[] }),
 }));
 
 import { dispatchTool } from '../lib/agent';
