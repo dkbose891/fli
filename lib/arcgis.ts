@@ -78,3 +78,16 @@ export function pointParams(lng: number, lat: number, outFields: string): Record
     outFields,
   };
 }
+
+/** Buffer point query for NSW Spatial FeatureServer layers (roads, POI, DNSP assets). */
+export function nearPointParams(lng: number, lat: number, outFields: string, radiusM: number): Record<string, string | number> {
+  return {
+    geometry: `${lng},${lat}`,
+    geometryType: 'esriGeometryPoint',
+    inSR: 4326,
+    spatialRel: 'esriSpatialRelIntersects',
+    distance: radiusM,
+    units: 'esriSRUnit_Meter',
+    outFields,
+  };
+}
